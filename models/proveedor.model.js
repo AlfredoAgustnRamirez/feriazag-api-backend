@@ -10,7 +10,7 @@ const query = (sql, params) => {
 };
 
 class ProveedorModel {
-  
+
   async crearProveedor(data) {
     const { nombre, cuit, telefono, email, direccion, contacto, activo } = data;
     const sql = `
@@ -58,6 +58,31 @@ class ProveedorModel {
     const result = await query(sql, [id_proveedor]);
     return result.affectedRows;
   }
-}
 
+  async tieneOrdenesCompra(id_proveedor) {
+    try {
+      const rows = await query(
+        'SELECT COUNT(*) as total FROM compras WHERE id_proveedor = ?',
+        [id_proveedor]
+      );
+      return rows[0].total > 0;
+    } catch (error) {
+      console.error('Error al verificar órdenes de compra:', error);
+      throw error;
+    }
+  }
+
+  async tieneOrdenesCompra(id_proveedor) {
+    try {
+      const rows = await query(
+        'SELECT COUNT(*) as total FROM compras WHERE id_proveedor = ?',
+        [id_proveedor]
+      );
+      return rows[0].total > 0;
+    } catch (error) {
+      console.error('Error en tieneOrdenesCompra:', error);
+      return false; 
+    }
+  }
+}
 module.exports = new ProveedorModel();

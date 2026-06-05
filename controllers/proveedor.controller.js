@@ -65,21 +65,24 @@ class ProveedorController {
     }
   }
 
-  async cambiarEstadoProveedor(req, res, next) {
-    try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res.status(400).json({ errores: errors.array() });
-      }
-      
-      const { id_proveedor } = req.params;
-      const { activo } = req.body;
-      const resultado = await ProveedorService.cambiarEstado(id_proveedor, activo);
-      res.json(resultado);
-    } catch (error) {
-      next(error);
-    }
+  async cambiarEstadoProveedor(req, res) {
+  try {
+    const { id_proveedor } = req.params;
+    const { activo } = req.body;
+    
+    const resultado = await ProveedorService.cambiarEstado(id_proveedor, activo);
+    
+    res.json({
+      success: true,
+      message: `Proveedor ${activo === 'Si' ? 'activado' : 'desactivado'} correctamente`
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      mensaje: error.message 
+    });
   }
+}
 
   async eliminarProveedor(req, res, next) {
     try {

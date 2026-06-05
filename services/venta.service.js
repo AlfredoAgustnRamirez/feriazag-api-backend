@@ -8,46 +8,65 @@ class VentaService {
     }
 
     async registrarVenta(data) {
-        const { total_venta, iduser, detalles, medios_pago, id_local, id_cliente } = data;
+    const { total_venta, iduser, detalles, medios_pago, id_local, id_cliente } = data;
 
-        // Validaciones
-        const sumaMedios = medios_pago.reduce((sum, m) => sum + Number(m.monto), 0);
-        if (sumaMedios !== Number(total_venta)) {
-            throw new Error(`La suma de medios de pago (${sumaMedios}) no coincide con el total (${total_venta})`);
-        }
-
-        if (!detalles || detalles.length === 0) {
-            throw new Error('Debe incluir al menos un producto');
-        }
-
-        for (const medio of medios_pago) {
-            if (medio.monto <= 0) {
-                throw new Error(`El monto del medio de pago debe ser mayor a 0`);
-            }
-        }
-
-        const fecha = new Date().toISOString().slice(0, 19).replace('T', ' ');
-
-        // Registrar venta - OBTENER EL ID DIRECTAMENTE
-        const idcabecera = await VentaModel.registrarVentaConSP(
-            iduser, id_local, total_venta, id_cliente || null, fecha
-        );
-
-        if (!idcabecera) {
-            throw new Error('No se pudo obtener el ID de la venta');
-        }
-
-        // Insertar medios de pago
-        await VentaModel.insertarMediosPago(idcabecera, medios_pago);
-
-        // Insertar detalles
-        await VentaModel.insertarDetallesVenta(idcabecera, detalles);
-
-        return {
-            id_venta: idcabecera,
-            mensaje: 'Venta creada correctamente'
-        };
+    // Validaciones
+    if (!detalles || detalles.length === 0) {
+        throw new Error('Debe incluir al menos un producto');
     }
+
+    // Separar efectivo de otros medios de pago
+    const efectivo = medios_pago.find(m => m.id_medio_pago === 1)?.monto || 0;
+    const sumaOtrosMedios = medios_pago
+        .filter(m => m.id_medio_pago !== 1)
+        .reduce((sum, m) => sum + Number(m.monto), 0);
+
+    // Validar que ningún medio tenga monto negativo
+    for (const medio of medios_pago) {
+        if (medio.monto < 0) {
+            throw new Error(`El monto del medio de pago no puede ser negativo`);
+        }
+    }
+
+    if (sumaOtrosMedios > Number(total_venta)) {
+        throw new Error(`La suma de otros medios de pago ($${sumaOtrosMedios}) supera el total ($${total_venta})`);
+    }
+
+    let vuelto = 0;
+    const totalNumerico = Number(total_venta);
+    const totalPagado = efectivo + sumaOtrosMedios;
+    
+    if (totalPagado < totalNumerico) {
+        const falta = totalNumerico - totalPagado;
+        throw new Error(`Faltan asignar $${falta.toFixed(2)} para completar el total`);
+    }
+    
+    if (totalPagado > totalNumerico) {
+        vuelto = totalPagado - totalNumerico;
+        console.log(`Vuelto a devolver: $${vuelto.toFixed(2)}`);
+        // No es error, solo informativo
+    }
+
+    const fecha = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+    const idcabecera = await VentaModel.registrarVentaConSP(
+        iduser, id_local, total_venta, id_cliente || null, fecha
+    );
+
+    if (!idcabecera) {
+        throw new Error('No se pudo obtener el ID de la venta');
+    }
+
+    await VentaModel.insertarMediosPago(idcabecera, medios_pago);
+
+    await VentaModel.insertarDetallesVenta(idcabecera, detalles);
+
+    return {
+        id_venta: idcabecera,
+        vuelto: vuelto,
+        mensaje: vuelto > 0 ? `Venta creada correctamente. Vuelto: $${vuelto}` : 'Venta creada correctamente'
+    };
+}
 
     async obtenerVentasPorFecha(fecha, idLocal) {
         if (!fecha || !idLocal) {

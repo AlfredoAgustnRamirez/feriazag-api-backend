@@ -28,20 +28,17 @@ class ProveedorService {
     return proveedor;
   }
 
-  async cambiarEstado(id_proveedor, activo) {
-    if (!activo || !['Si', 'No'].includes(activo)) {
-      throw new Error('Estado inválido. Use "Si" o "No"');
+ async cambiarEstado(id_proveedor, activo) {
+  if (activo === 'No') {
+    const tieneCompras = await ProveedorModel.tieneOrdenesCompra(id_proveedor);
+    if (tieneCompras) {
+      throw new Error('No se puede desactivar el proveedor porque tiene órdenes de compra asociadas');
     }
-    
-    const affected = await ProveedorModel.cambiarEstado(id_proveedor, activo);
-    if (affected === 0) {
-      throw new Error('Proveedor no encontrado');
-    }
-    
-    return { 
-      mensaje: `Proveedor ${activo === 'Si' ? 'activado' : 'desactivado'} correctamente` 
-    };
   }
+  
+  const resultado = await ProveedorModel.cambiarEstado(id_proveedor, activo);
+  return resultado;
+}
 
   async eliminarProveedor(id_proveedor) {
     const affected = await ProveedorModel.eliminarProveedor(id_proveedor);
