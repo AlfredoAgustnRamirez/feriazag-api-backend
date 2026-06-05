@@ -1,4 +1,4 @@
-const PagoFactory = require('../strategies/PagoFactory');
+const PagoFactory = require('../strategies/pagoFactory');
 
 class PaymentManager {
     static async procesarPago(medioPagoId, monto, datosAdicionales) {

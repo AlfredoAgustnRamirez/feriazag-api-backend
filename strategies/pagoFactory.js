@@ -1,8 +1,8 @@
-const EfectivoStrategy = require('./Efectivo');
-const DebitoStrategy = require('./Debito');
-const CreditoStrategy = require('./Credito');
-const TransferenciaStrategy = require('./Transferencia');
-const MercadoPagoStrategy = require('./MercadoPago');
+const EfectivoStrategy = require('./efectivo');
+const DebitoStrategy = require('./debito');
+const CreditoStrategy = require('./credito');
+const TransferenciaStrategy = require('./transferencia');
+const MercadoPagoStrategy = require('./mercadoPago');
 
 class PagoFactory {
     static getStrategy(medioPagoId) {
