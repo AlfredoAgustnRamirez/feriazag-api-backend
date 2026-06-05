@@ -1,0 +1,8 @@
+{
+  "jest.autoRun": {
+    "watch": true,
+    "onSave": "test-file"
+  },
+  "jest.showCoverageOnLoad": true,
+  "jest.debugCodeLens": true
+}
