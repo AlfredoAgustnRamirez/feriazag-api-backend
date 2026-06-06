@@ -103,24 +103,25 @@ class ProductoModel {
 }
 
 async obtenerProductosPorLocal(idLocal) {
-  const sql = `
-    SELECT 
-      p.id_producto, 
-      p.cod_producto, 
-      p.id_categoria, 
-      c.descripcion AS categoria,
-      p.descripcion, 
-      p.talle, 
-      p.precio, 
-      p.imagen, 
-      p.activo,
-      COALESCE(pss.cantidad, 0) as cantidad
-    FROM producto p
-    INNER JOIN categoria c ON p.id_categoria = c.id_categoria
-    LEFT JOIN producto_sucursal_stock pss ON p.id_producto = pss.id_producto AND pss.id_local = ?
-    ORDER BY p.descripcion
-  `;
-  return await query(sql, [idLocal]);
+    const sql = `
+        SELECT 
+            p.id_producto, 
+            p.cod_producto, 
+            p.id_categoria, 
+            c.descripcion AS categoria,
+            p.descripcion, 
+            p.talle, 
+            p.precio, 
+            p.imagen, 
+            p.activo,
+            COALESCE(pss.cantidad, 0) as cantidad
+        FROM producto p
+        INNER JOIN categoria c ON p.id_categoria = c.id_categoria
+        LEFT JOIN producto_sucursal_stock pss ON p.id_producto = pss.id_producto AND pss.id_local = ?
+        WHERE p.activo = 'Si'  -- ← Agregar esta condición para traer solo activos
+        ORDER BY p.descripcion
+    `;
+    return await query(sql, [idLocal]);
 }
 
   async obtenerProductosActivosPorLocal(idLocal) {

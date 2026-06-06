@@ -11,7 +11,6 @@ const query = (sql, params) => {
 
 class CompraModel {
 
-    // Listar todas las compras
     async listarCompras() {
         const sql = `
       SELECT c.*, p.nombre as proveedor_nombre, u.nombre as usuario_nombre 
@@ -23,41 +22,38 @@ class CompraModel {
         return await query(sql);
     }
 
-    // Obtener compra por ID con sus detalles
     async obtenerCompraPorId(id_compra) {
         const sqlCompra = `
-      SELECT c.*, p.nombre as proveedor_nombre 
-      FROM compras c
-      LEFT JOIN proveedores p ON c.id_proveedor = p.id_proveedor
-      WHERE c.id_compra = ?
+        SELECT c.*, p.nombre as proveedor_nombre 
+        FROM compras c
+        LEFT JOIN proveedores p ON c.id_proveedor = p.id_proveedor
+        WHERE c.id_compra = ?
     `;
         const compra = await query(sqlCompra, [id_compra]);
 
         if (compra.length === 0) return null;
 
         const sqlDetalles = `
-      SELECT cd.*, pr.descripcion, pr.cod_producto 
-      FROM compras_detalles cd
-      LEFT JOIN producto pr ON cd.id_producto = pr.id_producto
-      WHERE cd.id_compra = ?
+        SELECT cd.*, pr.descripcion, pr.cod_producto 
+        FROM compras_detalles cd
+        LEFT JOIN producto pr ON cd.id_producto = pr.id_producto
+        WHERE cd.id_compra = ?
     `;
         const detalles = await query(sqlDetalles, [id_compra]);
 
         return { ...compra[0], productos: detalles };
     }
 
-    // Crear compra
     async crearCompra(data) {
-        const { id_proveedor, id_usuario, fecha, numero_factura, subtotal, iva, total, estado } = data;
+        const { id_proveedor, id_usuario, fecha, numero_factura, subtotal, iva, total, estado, id_local } = data;
         const sql = `
-      INSERT INTO compras (id_proveedor, id_usuario, fecha, numero_factura, subtotal, iva, total, estado) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO compras (id_proveedor, id_usuario, id_local, fecha, numero_factura, subtotal, iva, total, estado) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
-        const result = await query(sql, [id_proveedor, id_usuario, fecha, numero_factura, subtotal, iva, total, estado || 'recibida']);
+        const result = await query(sql, [id_proveedor, id_usuario, id_local, fecha, numero_factura, subtotal, iva, total, estado || 'pendiente']);
         return result.insertId;
     }
 
-    // Crear detalles de compra
     async crearDetallesCompra(id_compra, detalles) {
         if (!detalles || detalles.length === 0) return;
 
@@ -66,47 +62,67 @@ class CompraModel {
         await query(sql, [values]);
     }
 
-    // Actualizar stock de productos
-    async actualizarStockProducto(id_producto, cantidad, id_local = 1) {
-        // Verificar si existe el registro de stock para este producto y local
-        const exists = await query(
-            'SELECT * FROM producto_sucursal_stock WHERE id_producto = ? AND id_local = ?',
-            [id_producto, id_local]
-        );
-
-        if (exists.length > 0) {
-            // Actualizar stock existente
-            const sql = 'UPDATE producto_sucursal_stock SET cantidad = cantidad + ? WHERE id_producto = ? AND id_local = ?';
-            await query(sql, [cantidad, id_producto, id_local]);
-        } else {
-            // Crear nuevo registro de stock
-            const sql = 'INSERT INTO producto_sucursal_stock (id_producto, id_local, cantidad, activo) VALUES (?, ?, ?, "Si")';
-            await query(sql, [id_producto, id_local, cantidad]);
-        }
-    }
-
-    // Obtener proveedores activos (para el formulario)
     async listarProveedoresActivos() {
         const sql = 'SELECT id_proveedor, nombre FROM proveedores WHERE activo = "Si" ORDER BY nombre';
         return await query(sql);
     }
 
-    // Obtener productos activos (para el formulario)
-    async listarProductosActivos() {
+    async listarProductosActivos(id_local = 1) {
         const sql = `
-    SELECT 
-      p.id_producto, 
-      p.cod_producto, 
-      p.descripcion, 
-      p.precio,
-      COALESCE(SUM(pss.cantidad), 0) as cantidad_total
-    FROM producto p
-    LEFT JOIN producto_sucursal_stock pss ON p.id_producto = pss.id_producto
-    WHERE p.activo = 'Si'
-    GROUP BY p.id_producto, p.cod_producto, p.descripcion, p.precio
-    ORDER BY p.descripcion
-  `;
-        return await query(sql);
+        SELECT 
+            p.id_producto, 
+            p.cod_producto, 
+            p.descripcion, 
+            p.precio,
+            COALESCE(pss.cantidad, 0) as cantidad
+        FROM producto p
+        LEFT JOIN producto_sucursal_stock pss ON p.id_producto = pss.id_producto AND pss.id_local = ?
+        WHERE p.activo = 'Si'
+        ORDER BY p.descripcion
+    `;
+        return await query(sql, [id_local]);
+    }
+
+    async listarProductosActivos(id_local) {
+        const sql = `
+        SELECT 
+            p.id_producto, 
+            p.cod_producto, 
+            p.descripcion, 
+            p.precio,
+            COALESCE(pss.cantidad, 0) as cantidad
+        FROM producto p
+        LEFT JOIN producto_sucursal_stock pss ON p.id_producto = pss.id_producto AND pss.id_local = ?
+        WHERE p.activo = 'Si'
+        ORDER BY p.descripcion
+    `;
+        return await query(sql, [id_local]);
+    }
+
+    async actualizarStockProducto(id_producto, cantidad, id_local) {
+
+        try {
+            const exists = await query(
+                'SELECT * FROM producto_sucursal_stock WHERE id_producto = ? AND id_local = ?',
+                [id_producto, id_local]
+            );
+
+            if (exists.length > 0) {
+                const sql = 'UPDATE producto_sucursal_stock SET cantidad = cantidad + ? WHERE id_producto = ? AND id_local = ?';
+                await query(sql, [cantidad, id_producto, id_local]);
+            } else {
+                const sql = 'INSERT INTO producto_sucursal_stock (id_producto, id_local, cantidad, activo) VALUES (?, ?, ?, "Si")';
+                await query(sql, [id_producto, id_local, cantidad]);
+            }
+        } catch (error) {
+            console.error('Error actualizando stock:', error);
+            throw error;
+        }
+    }
+
+    async actualizarEstado(id_compra, estado) {
+        const sql = 'UPDATE compras SET estado = ? WHERE id_compra = ?';
+        await query(sql, [estado, id_compra]);
     }
 }
 

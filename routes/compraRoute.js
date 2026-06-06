@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { verificarToken } = require('../middlewares/auth');
 const CompraController = require('../controllers/compra.controller');
-const { 
+const {
   validateCompraCreate,
   validateCompraId,
   handleValidationErrors
@@ -11,7 +11,7 @@ const {
 // ============ RUTAS ============
 
 // Listar todas las compras
-router.get('/listar', 
+router.get('/listar',
   verificarToken,
   CompraController.listarCompras
 );
@@ -42,6 +42,17 @@ router.get('/proveedores/activos',
 router.get('/productos/activos',
   verificarToken,
   CompraController.listarProductosActivos
+);
+
+// Confirmar recepción de compra
+router.put('/recibir/:id',
+  verificarToken,
+  CompraController.confirmarRecepcion
+);
+
+// Obtener productos activos por local
+router.get('/productos/local/:id_local',
+  CompraController.getProductosPorLocal
 );
 
 module.exports = router;
