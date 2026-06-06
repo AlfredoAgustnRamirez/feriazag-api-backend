@@ -81,8 +81,18 @@ class ProveedorModel {
       return rows[0].total > 0;
     } catch (error) {
       console.error('Error en tieneOrdenesCompra:', error);
-      return false; 
+      return false;
     }
+  }
+
+  async findByCuit(cuit) {
+    const rows = await query('SELECT id_proveedor FROM proveedores WHERE cuit = ?', [cuit]);
+    return rows[0] || null;
+  }
+
+  async findByCuitExcludingId(cuit, id) {
+    const rows = await query('SELECT id_proveedor FROM proveedores WHERE cuit = ? AND id_proveedor != ?', [cuit, id]);
+    return rows[0] || null;
   }
 }
 module.exports = new ProveedorModel();

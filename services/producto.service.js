@@ -1,29 +1,49 @@
 const ProductoModel = require('../models/producto.model');
 
 class ProductoService {
-  
+
   // ============ PRODUCTOS ============
-  async crearProducto(data, file) {
+ async crearProducto(data, file) {
     const imagen = file?.filename || null;
-    const nuevoId = await ProductoModel.crearProducto({ ...data, imagen });
-
-    if (data.cantidad !== undefined && data.id_local) {
-      await ProductoModel.crearStock({
-        id_producto: nuevoId,
-        id_local: data.id_local,
-        cantidad: data.cantidad,
-        activo: 'Si'
-      });
+    const { cod_producto, cantidad, id_local } = data;
+    
+    if (cod_producto) {
+        const existente = await ProductoModel.findByCodigo(cod_producto);
+        if (existente) {
+            throw new Error(`Ya existe un producto con el código ${cod_producto}`);
+        }
     }
-
+    
+    const nuevoId = await ProductoModel.crearProducto({ ...data, imagen });
+    
+    if (cantidad !== undefined && id_local) {
+        await ProductoModel.crearStock({
+            id_producto: nuevoId,
+            id_local: id_local,
+            cantidad: cantidad,
+            activo: 'Si'
+        });
+    }
+    
     return { id_producto: nuevoId, mensaje: 'Producto creado correctamente' };
-  }
+}
 
-  async actualizarProducto(id_producto, data, tieneImagen = false) {
-    const { cantidad, id_local, ...restoData } = data;
-    await ProductoModel.actualizarProducto(id_producto, restoData, id_local, cantidad);
+  async actualizarProducto(id, data, file) {
+    const imagen = file?.filename || null;
+    const { cod_producto } = data;
+    
+    if (cod_producto) {
+        const existente = await ProductoModel.findByCodigoExcludingId(cod_producto, id);
+        if (existente) {
+            throw new Error(`Ya existe otro producto con el código ${cod_producto}`);
+        }
+    }
+    
+    // Actualizar producto
+    await ProductoModel.actualizarProducto(id, { ...data, imagen });
+    
     return { mensaje: 'Producto actualizado correctamente' };
-  }
+}
 
   async obtenerTodosLosProductosConStockTotal() {
     return await ProductoModel.obtenerTodosLosProductosConStockTotal();

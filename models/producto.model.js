@@ -12,7 +12,7 @@ const query = (sql, params) => {
 class ProductoModel {
 
   // ============ PRODUCTOS ============
-  
+
   async crearProducto(data) {
     const { cod_producto, id_categoria, descripcion, talle, precio, activo, imagen } = data;
     const sql = `
@@ -31,13 +31,13 @@ class ProductoModel {
       WHERE id_producto = ?
     `;
     await query(sqlProducto, [cod_producto, id_categoria, descripcion, talle, precio, activo || 'Si', id_producto]);
-    
+
     if (cantidad !== undefined && id_local) {
       const exists = await query(
         'SELECT * FROM producto_sucursal_stock WHERE id_producto = ? AND id_local = ?',
         [id_producto, id_local]
       );
-      
+
       if (exists.length > 0) {
         await query(
           'UPDATE producto_sucursal_stock SET cantidad = ? WHERE id_producto = ? AND id_local = ?',
@@ -80,7 +80,7 @@ class ProductoModel {
   }
 
   async obtenerTodosLosProductosConStockTotal() {
-  const sql = `
+    const sql = `
     SELECT 
       p.id_producto,
       p.cod_producto,
@@ -99,10 +99,10 @@ class ProductoModel {
              p.descripcion, p.talle, p.precio, p.imagen, p.activo
     ORDER BY p.id_producto DESC
   `;
-  return await query(sql);
-}
+    return await query(sql);
+  }
 
-async obtenerProductosPorLocal(idLocal) {
+  async obtenerProductosPorLocal(idLocal) {
     const sql = `
         SELECT 
             p.id_producto, 
@@ -122,10 +122,10 @@ async obtenerProductosPorLocal(idLocal) {
         ORDER BY p.descripcion
     `;
     return await query(sql, [idLocal]);
-}
+  }
 
   async obtenerProductosActivosPorLocal(idLocal) {
-  const sql = `
+    const sql = `
     SELECT 
       p.id_producto, p.cod_producto, p.id_categoria, c.descripcion AS categoria,
       p.descripcion, p.talle, p.precio, p.imagen, p.activo,
@@ -136,8 +136,8 @@ async obtenerProductosPorLocal(idLocal) {
     WHERE p.activo = 'Si'
     ORDER BY p.descripcion
   `;
-  return await query(sql, [idLocal]);
-}
+    return await query(sql, [idLocal]);
+  }
 
   async obtenerProductosActivos() {
     const sql = `
@@ -228,33 +228,33 @@ async obtenerProductosPorLocal(idLocal) {
     await query(sql, [cantidad, id_producto, id_local]);
   }
 
-async transferirStock(id_producto, id_local_origen, id_local_destino, cantidad) {
-  
-  const stockOrigen = await this.obtenerStock(id_producto, id_local_origen);
-  
-  if (stockOrigen < cantidad) {
-    throw new Error(`Stock insuficiente. Disponible: ${stockOrigen}`);
-  }
-  
-  await query(
-    'UPDATE producto_sucursal_stock SET cantidad = cantidad - ? WHERE id_producto = ? AND id_local = ?',
-    [cantidad, id_producto, id_local_origen]
-  );
-  await query(
-    'UPDATE producto_sucursal_stock SET cantidad = cantidad + ? WHERE id_producto = ? AND id_local = ?',
-    [cantidad, id_producto, id_local_destino]
-  );
-  
-  return { success: true, message: 'Transferencia exitosa' };
-}
+  async transferirStock(id_producto, id_local_origen, id_local_destino, cantidad) {
 
-async obtenerStock(id_producto, id_local) {
-  const rows = await query(
-    'SELECT cantidad FROM producto_sucursal_stock WHERE id_producto = ? AND id_local = ?',
-    [id_producto, id_local]
-  );
-  return rows[0]?.cantidad || 0;
-}
+    const stockOrigen = await this.obtenerStock(id_producto, id_local_origen);
+
+    if (stockOrigen < cantidad) {
+      throw new Error(`Stock insuficiente. Disponible: ${stockOrigen}`);
+    }
+
+    await query(
+      'UPDATE producto_sucursal_stock SET cantidad = cantidad - ? WHERE id_producto = ? AND id_local = ?',
+      [cantidad, id_producto, id_local_origen]
+    );
+    await query(
+      'UPDATE producto_sucursal_stock SET cantidad = cantidad + ? WHERE id_producto = ? AND id_local = ?',
+      [cantidad, id_producto, id_local_destino]
+    );
+
+    return { success: true, message: 'Transferencia exitosa' };
+  }
+
+  async obtenerStock(id_producto, id_local) {
+    const rows = await query(
+      'SELECT cantidad FROM producto_sucursal_stock WHERE id_producto = ? AND id_local = ?',
+      [id_producto, id_local]
+    );
+    return rows[0]?.cantidad || 0;
+  }
 
   async obtenerStock(id_producto, id_local) {
     const rows = await query(
@@ -343,6 +343,21 @@ async obtenerStock(id_producto, id_local) {
     `;
     return await query(sql, [userId, userId]);
   }
+
+  async findByCodigo(cod_producto) {
+    const rows = await query('SELECT id_producto FROM producto WHERE cod_producto = ?', [cod_producto]);
+    return rows[0] || null;
 }
+
+async findByCodigoExcludingId(cod_producto, id_producto) {
+    const rows = await query(
+        'SELECT id_producto FROM producto WHERE cod_producto = ? AND id_producto != ?',
+        [cod_producto, id_producto]
+    );
+    return rows[0] || null;
+}
+}
+
+
 
 module.exports = new ProductoModel();

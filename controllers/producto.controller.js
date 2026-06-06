@@ -6,17 +6,21 @@ class ProductoController {
   // ============ PRODUCTOS ============
   async crearProducto(req, res, next) {
     try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res.status(400).json({ errores: errors.array() });
-      }
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errores: errors.array() });
+        }
 
-      const resultado = await ProductoService.crearProducto(req.body, req.file);
-      res.status(201).json(resultado);
+        const resultado = await ProductoService.crearProducto(req.body, req.file);
+        res.status(201).json(resultado);
     } catch (error) {
-      next(error);
+        console.error('Error en crearProducto:', error.message);
+        res.status(400).json({ 
+            mensaje: error.message,
+            success: false 
+        });
     }
-  }
+}
 
   async actualizarProducto(req, res, next) {
     try {

@@ -34,41 +34,37 @@ const handleValidationErrors = (req, res, next) => {
 };
 
 // ============ RUTAS ============
+// Calcular totales (con descuentos individuales y global)
+router.post('/calcular-totales',
+    VentaController.calcularTotales
+);
 
 // LISTAR PRODUCTOS PARA VENTA
 router.get('/listar', verificarToken, VentaController.listarProductos);
 
 // REGISTRAR VENTA
-router.post('/register-sp', 
-    verificarToken, 
-    validateRegistroVenta, 
-    handleValidationErrors, 
+router.post('/register-sp',
+    verificarToken,
+    validateRegistroVenta,
+    handleValidationErrors,
     VentaController.registrarVenta
 );
 
 router.post('/ventas', async (req, res) => {
-    // Angular te envía el array "mediosPagoSeleccionados" en el body
-    const { totalVenta, mediosPago, productos } = req.body; 
+    const { totalVenta, mediosPago, productos } = req.body;
 
     try {
-        // 1. Recorremos los medios de pago que usó el cajero en la pantalla
         for (const pago of mediosPago) {
-            
-            // LLAMADA AL PATRÓN STRATEGY:
             const resultado = await paymentManager.procesarPago(
-                pago.id_medio_pago, // Ej: 1 o 2
-                pago.monto,         // El monto parcial asignado a ese medio
-                pago.datos          // Cualquier dato extra (como efectivo recibido)
+                pago.id_medio_pago,
+                pago.monto,
+                pago.datos
             );
 
-            // Si alguna estrategia necesita frenar el flujo (ej: Mercado Pago esperando escaneo), manejás la respuesta aquí
             if (resultado.estado === 'PENDIENTE_QR') {
                 // Lógica para devolver el QR a Angular...
             }
         }
-
-        // 2. Si todos los pagos se procesaron bien, guardás la venta en MySQL
-        // await pool.query('INSERT INTO ventas ...');
 
         res.json({ status: 'success', message: 'Venta y pagos registrados correctamente.' });
 
@@ -93,20 +89,31 @@ router.post('/guardar-caja', verificarToken, VentaController.guardarCierre);
 router.get('/historial-caja', verificarToken, VentaController.getHistorialCaja);
 
 // REPORTE POR RANGO
-router.get('/reporte/rango', 
-    verificarToken, 
-    validateReporteRango, 
-    handleValidationErrors, 
+router.get('/reporte/rango',
+    verificarToken,
+    validateReporteRango,
+    handleValidationErrors,
     VentaController.getReporteRango
 );
 
+// ✅ RUTA PARA CALCULAR TOTAL CON RECARGO (STRATEGY)
+router.post('/calcular-total',
+    verificarToken,
+    VentaController.calcularTotalConRecargo
+);
+
 // TODAS LAS VENTAS
-router.get('/todas', verificarToken, VentaController.obtenerTodasLasVentas);
+router.get('/todas',
+    verificarToken,
+    VentaController.obtenerTodasLasVentas
+);
 
 // DESACTIVAR PRODUCTO
-router.delete('/desactivar/:id_producto', verificarToken, VentaController.desactivarProducto);
+router.delete('/desactivar/:id_producto',
+    verificarToken,
+    VentaController.desactivarProducto
+);
 
-// Calcular totales (con descuentos individuales y global)
-router.post('/calcular-totales', verificarToken, VentaController.calcularTotales);
+
 
 module.exports = router;

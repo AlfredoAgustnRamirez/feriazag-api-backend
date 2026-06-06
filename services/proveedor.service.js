@@ -3,11 +3,25 @@ const ProveedorModel = require('../models/proveedor.model');
 class ProveedorService {
 
   async crearProveedor(data) {
-    const nuevoId = await ProveedorModel.crearProveedor(data);
-    return { id_proveedor: nuevoId, mensaje: 'Proveedor creado correctamente' };
-  }
+    const { cuit, nombre, telefono, email, direccion, contacto } = data;
+    if (cuit) {
+        const existente = await ProveedorModel.findByCuit(cuit);
+        if (existente) {
+            throw new Error(`Ya existe un proveedor con el CUIT ${cuit}`);
+        }
+    }
+    const id = await ProveedorModel.crearProveedor(data);
+    return { id, mensaje: 'Proveedor creado correctamente' };
+}
 
   async actualizarProveedor(id_proveedor, data) {
+     const { cuit } = data;
+    if (cuit) {
+        const existente = await ProveedorModel.findByCuitExcludingId(cuit, id);
+        if (existente) {
+            throw new Error(`Ya existe otro proveedor con el CUIT ${cuit}`);
+        }
+    }
     await ProveedorModel.actualizarProveedor(id_proveedor, data);
     return { mensaje: 'Proveedor actualizado correctamente' };
   }

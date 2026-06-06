@@ -1,4 +1,6 @@
 const VentaService = require('../services/venta.service');
+const PagoFactory = require('../strategies/pagoFactory');
+
 
 class VentaController {
     async listarProductos(req, res, next) {
@@ -18,6 +20,25 @@ class VentaController {
             next(error);
         }
     }
+
+    async calcularTotalConRecargo(req, res, next) {
+    try {
+        const { subtotal, medioPagoId } = req.body;
+        
+        const estrategia = PagoFactory.getStrategy(medioPagoId);
+        const resultado = await estrategia.procesar(subtotal, {});
+        
+        res.json({
+            subtotal: subtotal,
+            recargo: resultado.recargo || 0,
+            total: resultado.total,
+            metodo: resultado.metodo,
+            mensaje: resultado.mensaje
+        });
+    } catch (error) {
+        res.status(400).json({ mensaje: error.message });
+    }
+}
 
     async obtenerVentasPorFecha(req, res, next) {
         try {
