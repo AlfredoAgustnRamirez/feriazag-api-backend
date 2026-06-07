@@ -12,13 +12,11 @@ const query = (sql, params) => {
 class DashboardModel {
 
   async getStatus(idLocal) {
-  // Calcular fecha actual en Argentina (UTC-3)
   const ahora = new Date();
   const fechaArgentina = new Date(ahora.getTime());
   fechaArgentina.setHours(fechaArgentina.getHours() - 3);
   const fechaHoy = fechaArgentina.toISOString().split('T')[0];
   
-  // Consulta para ventas de hoy
   const ventasHoyQuery = `
     SELECT 
       COUNT(*) as total, 
@@ -28,7 +26,6 @@ class DashboardModel {
   `;
   const ventasHoy = await query(ventasHoyQuery, [fechaHoy, idLocal]);
   
-  // Consulta para ventas de la semana
   const ventasSemanaQuery = `
     SELECT 
       COUNT(*) as total, 
@@ -38,7 +35,6 @@ class DashboardModel {
   `;
   const ventasSemana = await query(ventasSemanaQuery, [idLocal]);
   
-  // Consulta para ventas del mes
   const ventasMesQuery = `
     SELECT 
       COUNT(*) as total, 
@@ -48,7 +44,6 @@ class DashboardModel {
   `;
   const ventasMes = await query(ventasMesQuery, [idLocal]);
   
-  // Consulta para total de productos
   const totalProductosQuery = `
     SELECT COUNT(*) as total 
     FROM producto_sucursal_stock 
@@ -56,7 +51,6 @@ class DashboardModel {
   `;
   const totalProductos = await query(totalProductosQuery, [idLocal]);
   
-  // Consulta para productos bajo stock
   const productosBajoStockQuery = `
     SELECT COUNT(*) as total 
     FROM producto_sucursal_stock 
@@ -64,7 +58,6 @@ class DashboardModel {
   `;
   const productosBajoStock = await query(productosBajoStockQuery, [idLocal]);
   
-  // Consulta para productos sin stock
   const productoSinStockQuery = `
     SELECT COUNT(*) as total 
     FROM producto_sucursal_stock 
@@ -72,7 +65,6 @@ class DashboardModel {
   `;
   const productoSinStock = await query(productoSinStockQuery, [idLocal]);
   
-  // Consulta para total de categorías
   const totalCategoriasQuery = `SELECT COUNT(*) as total FROM categoria`;
   const totalCategorias = await query(totalCategoriasQuery);
   

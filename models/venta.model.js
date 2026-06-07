@@ -26,7 +26,6 @@ class VentaModel {
     // REGISTRAR VENTA CON SP
     async registrarVentaConSP(iduser, id_local, total_venta, id_cliente, fecha) {
         try {
-            // Ejecutar el SP
             const results = await query('CALL sp_registrar_venta(?, ?, ?, ?, ?)', [
                 iduser,
                 id_local,

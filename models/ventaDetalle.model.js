@@ -11,7 +11,6 @@ const query = (sql, params) => {
 
 class VentaDetalleModel {
 
-  // Obtener todas las ventas con resumen
   async listarVentas() {
     const sql = `
       SELECT 
@@ -30,7 +29,6 @@ class VentaDetalleModel {
     return await query(sql);
   }
 
-  // Obtener productos de una venta específica
   async obtenerProductosPorVenta(idCabecera) {
     const sql = `
       SELECT 
@@ -47,7 +45,6 @@ class VentaDetalleModel {
     return await query(sql, [idCabecera]);
   }
 
-  // Obtener detalle completo de una venta
   async obtenerVentaPorId(idCabecera) {
     const sql = `
       SELECT 
@@ -71,7 +68,6 @@ class VentaDetalleModel {
     return result[0];
   }
 
-  // Obtener medios de pago de una venta
   async obtenerMediosPagoPorVenta(idCabecera) {
     const sql = `
       SELECT 
@@ -84,7 +80,6 @@ class VentaDetalleModel {
     return await query(sql, [idCabecera]);
   }
 
-  // Reporte por rango de fechas
   async reportePorRango(inicio, fin) {
     const sql = `
       SELECT 
@@ -107,7 +102,6 @@ class VentaDetalleModel {
     return await query(sql, [inicio, fin]);
   }
 
-  // Reporte completo (con o sin filtro de fechas)
   async reporteCompleto(inicio = null, fin = null) {
     let sql = `
       SELECT 
