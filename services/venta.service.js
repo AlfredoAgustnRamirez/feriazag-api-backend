@@ -1,7 +1,7 @@
 const VentaModel = require('../models/venta.model');
 const Helpers = require('../utils/helpers');
 const paymentManager = require('../managers/paymentManager');
-const PagoFactory = require('../strategies/pagoFactory'); // ✅ AGREGADO
+const PagoFactory = require('../strategies/pagoFactory'); 
 
 class VentaService {
     async listarProductos() {
@@ -16,13 +16,11 @@ class VentaService {
             throw new Error('Debe incluir al menos un producto');
         }
 
-        // Separar efectivo de otros medios de pago
         const efectivo = medios_pago.find(m => m.id_medio_pago === 1)?.monto || 0;
         const sumaOtrosMedios = medios_pago
             .filter(m => m.id_medio_pago !== 1)
             .reduce((sum, m) => sum + Number(m.monto), 0);
 
-        // Validar que ningún medio tenga monto negativo
         for (const medio of medios_pago) {
             if (medio.monto < 0) {
                 throw new Error(`El monto del medio de pago no puede ser negativo`);
@@ -79,11 +77,11 @@ class VentaService {
         const medios = await VentaModel.obtenerMediosPago();
 
         const recargos = {
-            1: 0,   // Efectivo
-            2: 0,   // Débito
-            3: 10,  // Crédito
-            4: 0,   // Transferencia
-            5: 5    // Mercado Pago
+            1: 0,  
+            2: 0,   
+            3: 10,  
+            4: 0,   
+            5: 5    
         };
 
         return medios.map(medio => ({
@@ -93,7 +91,6 @@ class VentaService {
         }));
     }
 
-    // ✅ NUEVO MÉTODO PARA CALCULAR TOTAL CON RECARGO (STRATEGY)
     async calcularTotalConRecargo(subtotal, medioPagoId) {
         const estrategia = PagoFactory.getStrategy(medioPagoId);
         const resultado = await estrategia.procesar(subtotal, {});

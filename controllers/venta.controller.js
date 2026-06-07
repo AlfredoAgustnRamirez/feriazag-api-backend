@@ -1,6 +1,6 @@
 const VentaService = require('../services/venta.service');
 const PagoFactory = require('../strategies/pagoFactory');
-
+const PaymentManager = require('../managers/paymentManager');
 
 class VentaController {
     async listarProductos(req, res, next) {
@@ -21,22 +21,40 @@ class VentaController {
         }
     }
 
-    async calcularTotalConRecargo(req, res, next) {
+    async calcularTotalConRecargo(req, res) {
     try {
-        const { subtotal, medioPagoId } = req.body;
+        const { medios_pago } = req.body;
         
-        const estrategia = PagoFactory.getStrategy(medioPagoId);
-        const resultado = await estrategia.procesar(subtotal, {});
+        if (!medios_pago || medios_pago.length === 0) {
+            return res.status(400).json({ mensaje: 'Debe especificar al menos un medio de pago' });
+        }
+        
+        let totalConRecargos = 0;
+        const detallesRecargos = [];
+        
+        for (const medio of medios_pago) {
+            const strategy = PaymentManager.getStrategy(medio.id_medio_pago);
+            const resultado = await strategy.procesar(medio.monto || 0);
+            
+            totalConRecargos += resultado.total;
+            detallesRecargos.push({
+                id_medio_pago: medio.id_medio_pago,
+                monto: medio.monto || 0,
+                recargo: resultado.recargo || 0,
+                recargoPorcentaje: resultado.recargoPorcentaje || 
+                    (medio.id_medio_pago === 3 ? 10 : medio.id_medio_pago === 5 ? 5 : 0),
+                total: resultado.total
+            });
+        }
         
         res.json({
-            subtotal: subtotal,
-            recargo: resultado.recargo || 0,
-            total: resultado.total,
-            metodo: resultado.metodo,
-            mensaje: resultado.mensaje
+            success: true,
+            total: totalConRecargos,
+            detalles: detallesRecargos
         });
     } catch (error) {
-        res.status(400).json({ mensaje: error.message });
+        console.error('Error:', error);
+        res.status(500).json({ mensaje: error.message });
     }
 }
 

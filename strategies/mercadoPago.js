@@ -6,10 +6,11 @@ class MercadoPagoStrategy extends PagoStrategy {
         return {
             estado: 'PENDIENTE_QR',
             metodo: 'MERCADO_PAGO',
-            total: monto + recargo,
+            montoOriginal: monto,
             recargo: recargo,
-            mensaje: `Mercado Pago - Recargo del 5%: $${recargo.toFixed(2)}`,
-            qrData: datosAdicionales.qrData || null
+            recargoPorcentaje: 5, 
+            total: monto + recargo,
+            mensaje: `Pago con Mercado Pago - Recargo del 5%`
         };
     }
 }

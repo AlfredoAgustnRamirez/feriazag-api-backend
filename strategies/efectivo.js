@@ -5,8 +5,10 @@ class EfectivoStrategy extends PagoStrategy {
         return {
             estado: 'APROBADO',
             metodo: 'EFECTIVO',
-            total: monto,
+            montoOriginal: monto,
             recargo: 0,
+            recargoPorcentaje: 0,  
+            total: monto,
             mensaje: 'Pago en efectivo - Sin recargo'
         };
     }

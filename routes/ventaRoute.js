@@ -40,7 +40,9 @@ router.post('/calcular-totales',
 );
 
 // LISTAR PRODUCTOS PARA VENTA
-router.get('/listar', verificarToken, VentaController.listarProductos);
+router.get('/listar', 
+    verificarToken, 
+    VentaController.listarProductos);
 
 // REGISTRAR VENTA
 router.post('/register-sp',
@@ -74,19 +76,29 @@ router.post('/ventas', async (req, res) => {
 });
 
 // VENTAS POR FECHA
-router.get('/por-fecha', verificarToken, VentaController.obtenerVentasPorFecha);
+router.get('/por-fecha', 
+    verificarToken, 
+    VentaController.obtenerVentasPorFecha);
 
 // MEDIOS DE PAGO
-router.get('/medios-pago', verificarToken, VentaController.obtenerMediosPago);
+router.get('/medios-pago', 
+    verificarToken, 
+    VentaController.obtenerMediosPago);
 
 // DASHBOARD STATS
-router.get('/dashboard-stats', verificarToken, VentaController.getDashboardStats);
+router.get('/dashboard-stats', 
+    verificarToken, 
+    VentaController.getDashboardStats);
 
 // GUARDAR CIERRE DE CAJA
-router.post('/guardar-caja', verificarToken, VentaController.guardarCierre);
+router.post('/guardar-caja', 
+    verificarToken, 
+    VentaController.guardarCierre);
 
 // HISTORIAL DE CAJA
-router.get('/historial-caja', verificarToken, VentaController.getHistorialCaja);
+router.get('/historial-caja', 
+    verificarToken, 
+    VentaController.getHistorialCaja);
 
 // REPORTE POR RANGO
 router.get('/reporte/rango',
@@ -96,9 +108,7 @@ router.get('/reporte/rango',
     VentaController.getReporteRango
 );
 
-// ✅ RUTA PARA CALCULAR TOTAL CON RECARGO (STRATEGY)
 router.post('/calcular-total',
-    verificarToken,
     VentaController.calcularTotalConRecargo
 );
 

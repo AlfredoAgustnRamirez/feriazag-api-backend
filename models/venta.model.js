@@ -1,6 +1,5 @@
 const connection = require('../conection');
 
-// Helper para promisificar queries
 const query = (sql, params) => {
     return new Promise((resolve, reject) => {
         connection.query(sql, params, (error, results) => {
@@ -11,6 +10,7 @@ const query = (sql, params) => {
 };
 
 class VentaModel {
+
     // LISTAR PRODUCTOS
     async listarProductos() {
         const sql = `
