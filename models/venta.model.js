@@ -67,6 +67,22 @@ class VentaModel {
         return await query(sql, [mediosValues]);
     }
 
+    // VERIFICAR SI HAY CAJA ABIERTA
+    async verificarCajaAbierta(id_usuario, id_local) {
+    
+    const sql = `
+        SELECT id_cierre 
+        FROM cierre_caja 
+        WHERE id_usuario = ? 
+        AND fecha_cierre IS NULL 
+        AND DATE(fecha) = CURDATE()
+        LIMIT 1
+    `;
+    const results = await query(sql, [id_usuario]);
+    
+    return results.length > 0;
+}
+
     // INSERTAR DETALLES DE VENTA
     async insertarDetallesVenta(idcabecera, detalles) {
         if (!detalles || detalles.length === 0) return;

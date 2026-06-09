@@ -1,7 +1,7 @@
 const VentaModel = require('../models/venta.model');
 const Helpers = require('../utils/helpers');
 const paymentManager = require('../managers/paymentManager');
-const PagoFactory = require('../strategies/pagoFactory'); 
+const PagoFactory = require('../strategies/pagoFactory');
 
 class VentaService {
     async listarProductos() {
@@ -9,9 +9,16 @@ class VentaService {
     }
 
     async registrarVenta(data) {
+        // ========== PRIMERO: Desestructurar los datos ==========
         const { total_venta, iduser, detalles, medios_pago, id_local, id_cliente } = data;
 
-        // Validaciones
+        // ========== SEGUNDO: Validar caja abierta ==========
+        const cajaAbierta = await this.verificarCajaAbierta(iduser, id_local);
+        if (!cajaAbierta) {
+            throw new Error('Debe abrir la caja antes de realizar una venta');
+        }
+
+        // ========== RESTO DE VALIDACIONES ==========
         if (!detalles || detalles.length === 0) {
             throw new Error('Debe incluir al menos un producto');
         }
@@ -56,7 +63,6 @@ class VentaService {
         }
 
         await VentaModel.insertarMediosPago(idcabecera, medios_pago);
-
         await VentaModel.insertarDetallesVenta(idcabecera, detalles);
 
         return {
@@ -77,11 +83,11 @@ class VentaService {
         const medios = await VentaModel.obtenerMediosPago();
 
         const recargos = {
-            1: 0,  
-            2: 0,   
-            3: 10,  
-            4: 0,   
-            5: 5    
+            1: 0,
+            2: 0,
+            3: 10,
+            4: 0,
+            5: 5
         };
 
         return medios.map(medio => ({
@@ -121,6 +127,12 @@ class VentaService {
 
     async obtenerHistorialCaja() {
         return await VentaModel.obtenerHistorialCaja();
+    }
+
+
+    // VERIFICAR CAJA ABIERTA
+    async verificarCajaAbierta(id_usuario, id_local) {
+        return await VentaModel.verificarCajaAbierta(id_usuario, id_local);
     }
 
     async calcularTotales(detalles, modoAjuste, tipoDescuento, valorDescuento) {

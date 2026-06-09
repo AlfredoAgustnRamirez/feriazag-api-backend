@@ -112,6 +112,10 @@ router.post('/calcular-total',
     VentaController.calcularTotalConRecargo
 );
 
+router.get('/verificar-caja', 
+    VentaController.verificarCajaAbierta
+);
+
 // TODAS LAS VENTAS
 router.get('/todas',
     verificarToken,

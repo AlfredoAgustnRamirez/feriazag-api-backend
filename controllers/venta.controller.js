@@ -22,41 +22,41 @@ class VentaController {
     }
 
     async calcularTotalConRecargo(req, res) {
-    try {
-        const { medios_pago } = req.body;
-        
-        if (!medios_pago || medios_pago.length === 0) {
-            return res.status(400).json({ mensaje: 'Debe especificar al menos un medio de pago' });
-        }
-        
-        let totalConRecargos = 0;
-        const detallesRecargos = [];
-        
-        for (const medio of medios_pago) {
-            const strategy = PaymentManager.getStrategy(medio.id_medio_pago);
-            const resultado = await strategy.procesar(medio.monto || 0);
-            
-            totalConRecargos += resultado.total;
-            detallesRecargos.push({
-                id_medio_pago: medio.id_medio_pago,
-                monto: medio.monto || 0,
-                recargo: resultado.recargo || 0,
-                recargoPorcentaje: resultado.recargoPorcentaje || 
-                    (medio.id_medio_pago === 3 ? 10 : medio.id_medio_pago === 5 ? 5 : 0),
-                total: resultado.total
+        try {
+            const { medios_pago } = req.body;
+
+            if (!medios_pago || medios_pago.length === 0) {
+                return res.status(400).json({ mensaje: 'Debe especificar al menos un medio de pago' });
+            }
+
+            let totalConRecargos = 0;
+            const detallesRecargos = [];
+
+            for (const medio of medios_pago) {
+                const strategy = PaymentManager.getStrategy(medio.id_medio_pago);
+                const resultado = await strategy.procesar(medio.monto || 0);
+
+                totalConRecargos += resultado.total;
+                detallesRecargos.push({
+                    id_medio_pago: medio.id_medio_pago,
+                    monto: medio.monto || 0,
+                    recargo: resultado.recargo || 0,
+                    recargoPorcentaje: resultado.recargoPorcentaje ||
+                        (medio.id_medio_pago === 3 ? 10 : medio.id_medio_pago === 5 ? 5 : 0),
+                    total: resultado.total
+                });
+            }
+
+            res.json({
+                success: true,
+                total: totalConRecargos,
+                detalles: detallesRecargos
             });
+        } catch (error) {
+            console.error('Error:', error);
+            res.status(500).json({ mensaje: error.message });
         }
-        
-        res.json({
-            success: true,
-            total: totalConRecargos,
-            detalles: detallesRecargos
-        });
-    } catch (error) {
-        console.error('Error:', error);
-        res.status(500).json({ mensaje: error.message });
     }
-}
 
     async obtenerVentasPorFecha(req, res, next) {
         try {
@@ -141,6 +141,16 @@ class VentaController {
         try {
             const result = await VentaService.desactivarProducto(req.params.id_producto);
             res.status(200).json(result);
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    async verificarCajaAbierta(req, res, next) {
+        try {
+            const { usuario, local } = req.query;
+            const abierta = await VentaService.verificarCajaAbierta(usuario, local);
+            res.json(abierta);
         } catch (error) {
             next(error);
         }
