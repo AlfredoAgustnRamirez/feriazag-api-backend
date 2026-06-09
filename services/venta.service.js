@@ -9,68 +9,97 @@ class VentaService {
     }
 
     async registrarVenta(data) {
-        // ========== PRIMERO: Desestructurar los datos ==========
-        const { total_venta, iduser, detalles, medios_pago, id_local, id_cliente } = data;
+    const { total_venta, iduser, detalles, medios_pago, id_local, id_cliente } = data;
 
-        // ========== SEGUNDO: Validar caja abierta ==========
-        const cajaAbierta = await this.verificarCajaAbierta(iduser, id_local);
-        if (!cajaAbierta) {
-            throw new Error('Debe abrir la caja antes de realizar una venta');
-        }
-
-        // ========== RESTO DE VALIDACIONES ==========
-        if (!detalles || detalles.length === 0) {
-            throw new Error('Debe incluir al menos un producto');
-        }
-
-        const efectivo = medios_pago.find(m => m.id_medio_pago === 1)?.monto || 0;
-        const sumaOtrosMedios = medios_pago
-            .filter(m => m.id_medio_pago !== 1)
-            .reduce((sum, m) => sum + Number(m.monto), 0);
-
-        for (const medio of medios_pago) {
-            if (medio.monto < 0) {
-                throw new Error(`El monto del medio de pago no puede ser negativo`);
-            }
-        }
-
-        if (sumaOtrosMedios > Number(total_venta)) {
-            throw new Error(`La suma de otros medios de pago ($${sumaOtrosMedios}) supera el total ($${total_venta})`);
-        }
-
-        let vuelto = 0;
-        const totalNumerico = Number(total_venta);
-        const totalPagado = efectivo + sumaOtrosMedios;
-
-        if (totalPagado < totalNumerico) {
-            const falta = totalNumerico - totalPagado;
-            throw new Error(`Faltan asignar $${falta.toFixed(2)} para completar el total`);
-        }
-
-        if (totalPagado > totalNumerico) {
-            vuelto = totalPagado - totalNumerico;
-            console.log(`Vuelto a devolver: $${vuelto.toFixed(2)}`);
-        }
-
-        const fecha = new Date().toISOString().slice(0, 19).replace('T', ' ');
-
-        const idcabecera = await VentaModel.registrarVentaConSP(
-            iduser, id_local, total_venta, id_cliente || null, fecha
-        );
-
-        if (!idcabecera) {
-            throw new Error('No se pudo obtener el ID de la venta');
-        }
-
-        await VentaModel.insertarMediosPago(idcabecera, medios_pago);
-        await VentaModel.insertarDetallesVenta(idcabecera, detalles);
-
-        return {
-            id_venta: idcabecera,
-            vuelto: vuelto,
-            mensaje: vuelto > 0 ? `Venta creada correctamente. Vuelto: $${vuelto}` : 'Venta creada correctamente'
-        };
+    // Validar caja abierta
+    const cajaAbierta = await this.verificarCajaAbierta(iduser, id_local);
+    if (!cajaAbierta) {
+        throw new Error('Debe abrir la caja antes de realizar una venta');
     }
+
+    if (!detalles || detalles.length === 0) {
+        throw new Error('Debe incluir al menos un producto');
+    }
+
+    // Calcular subtotal (sin descuentos por producto ya aplicados)
+    let subtotal = 0;
+    for (const detalle of detalles) {
+        const descuento = (detalle.descuento || 0) / 100;
+        const precioUnitario = detalle.precio * (1 - descuento);
+        subtotal += precioUnitario * detalle.cantidad;
+    }
+
+    // Obtener el medio de pago principal y calcular recargo
+    const medioPrincipal = medios_pago[0];
+    let totalConRecargo = Number(total_venta);
+    let recargoMonto = 0;
+    let recargoPorcentaje = 0;
+
+    // Calcular recargo según el medio de pago
+    if (medioPrincipal && medioPrincipal.id_medio_pago !== 1) { // 1 = efectivo (sin recargo)
+        const resultado = await this.calcularTotalConRecargo(subtotal, medioPrincipal.id_medio_pago);
+        totalConRecargo = resultado.total;
+        recargoMonto = totalConRecargo - subtotal;
+        recargoPorcentaje = Number(((recargoMonto / subtotal) * 100).toFixed(2));
+    }
+
+    // Validar montos de medios de pago
+    const efectivo = medios_pago.find(m => m.id_medio_pago === 1)?.monto || 0;
+    const sumaOtrosMedios = medios_pago
+        .filter(m => m.id_medio_pago !== 1)
+        .reduce((sum, m) => sum + Number(m.monto), 0);
+
+    if (medios_pago.some(m => m.monto < 0)) {
+        throw new Error('El monto del medio de pago no puede ser negativo');
+    }
+
+    if (sumaOtrosMedios > totalConRecargo) {
+        throw new Error(`La suma de otros medios de pago ($${sumaOtrosMedios}) supera el total ($${totalConRecargo})`);
+    }
+
+    // Calcular vuelto
+    let vuelto = 0;
+    const totalPagado = efectivo + sumaOtrosMedios;
+
+    if (totalPagado < totalConRecargo) {
+        const falta = totalConRecargo - totalPagado;
+        throw new Error(`Faltan asignar $${falta.toFixed(2)} para completar el total`);
+    }
+
+    if (totalPagado > totalConRecargo) {
+        vuelto = totalPagado - totalConRecargo;
+    }
+
+    const fecha = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+    const idcabecera = await VentaModel.registrarVentaConSP(
+        iduser,
+        id_local,
+        subtotal,
+        totalConRecargo,
+        recargoMonto,
+        recargoPorcentaje,
+        id_cliente || null,
+        fecha
+    );
+
+    if (!idcabecera) {
+        throw new Error('No se pudo obtener el ID de la venta');
+    }
+
+    await VentaModel.insertarMediosPago(idcabecera, medios_pago);
+    await VentaModel.insertarDetallesVenta(idcabecera, detalles);
+
+    return {
+        id_venta: idcabecera,
+        vuelto: vuelto,
+        subtotal: subtotal,
+        recargo_monto: recargoMonto,
+        recargo_porcentaje: recargoPorcentaje,
+        total: totalConRecargo,
+        mensaje: vuelto > 0 ? `Venta creada correctamente. Vuelto: $${vuelto.toFixed(2)}` : 'Venta creada correctamente'
+    };
+}
 
     async obtenerVentasPorFecha(fecha, idLocal) {
         if (!fecha || !idLocal) {

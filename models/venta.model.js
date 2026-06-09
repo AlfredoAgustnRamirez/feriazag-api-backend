@@ -24,20 +24,21 @@ class VentaModel {
     }
 
     // REGISTRAR VENTA CON SP
-    async registrarVentaConSP(iduser, id_local, total_venta, id_cliente, fecha) {
+    async registrarVentaConSP(iduser, id_local, subtotal, total_venta, recargo_monto, recargo_porcentaje, id_cliente, fecha) {
         try {
-            const results = await query('CALL sp_registrar_venta(?, ?, ?, ?, ?)', [
+            const results = await query('CALL sp_registrar_venta(?, ?, ?, ?, ?, ?, ?, ?)', [
                 iduser,
                 id_local,
+                subtotal,
                 total_venta,
+                recargo_monto,
+                recargo_porcentaje,
                 id_cliente || null,
                 fecha
             ]);
 
-            // Extraer el ID del resultado
             let id_venta = null;
 
-            // El SP devuelve un array de resultados
             if (results && results[0] && results[0][0] && results[0][0].id_cabecera) {
                 id_venta = results[0][0].id_cabecera;
             } else if (results && results[0] && results[0].id_cabecera) {
@@ -69,8 +70,8 @@ class VentaModel {
 
     // VERIFICAR SI HAY CAJA ABIERTA
     async verificarCajaAbierta(id_usuario, id_local) {
-    
-    const sql = `
+
+        const sql = `
         SELECT id_cierre 
         FROM cierre_caja 
         WHERE id_usuario = ? 
@@ -78,10 +79,10 @@ class VentaModel {
         AND DATE(fecha) = CURDATE()
         LIMIT 1
     `;
-    const results = await query(sql, [id_usuario]);
-    
-    return results.length > 0;
-}
+        const results = await query(sql, [id_usuario]);
+
+        return results.length > 0;
+    }
 
     // INSERTAR DETALLES DE VENTA
     async insertarDetallesVenta(idcabecera, detalles) {
