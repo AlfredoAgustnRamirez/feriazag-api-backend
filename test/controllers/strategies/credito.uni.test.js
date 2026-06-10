@@ -1,4 +1,4 @@
-const CreditoStrategy = require('../../services/strategies/CreditoStrategy');
+const CreditoStrategy = require('../../../strategies/Credito');
 
 describe('CreditoStrategy - Pruebas Unitarias', () => {
   let strategy;
@@ -9,7 +9,7 @@ describe('CreditoStrategy - Pruebas Unitarias', () => {
 
   test('debería aplicar 10% de recargo correctamente', async () => {
     const resultado = await strategy.procesar(10000);
-    
+
     expect(resultado.total).toBe(11000);
     expect(resultado.recargo).toBe(1000);
     expect(resultado.recargoPorcentaje).toBe(10);
@@ -19,15 +19,15 @@ describe('CreditoStrategy - Pruebas Unitarias', () => {
 
   test('debería funcionar con monto 0', async () => {
     const resultado = await strategy.procesar(0);
-    
+
     expect(resultado.total).toBe(0);
     expect(resultado.recargo).toBe(0);
   });
 
   test('debería funcionar con montos decimales', async () => {
     const resultado = await strategy.procesar(99.99);
-    
-    expect(resultado.total).toBe(109.989);
-    expect(resultado.recargo).toBe(9.999);
+
+    expect(resultado.total).toBeCloseTo(109.989, 3);
+    expect(resultado.recargo).toBeCloseTo(9.999, 3);
   });
 });

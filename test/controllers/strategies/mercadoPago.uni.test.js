@@ -1,4 +1,4 @@
-const MercadoPagoStrategy = require('../../services/strategies/MercadoPagoStrategy');
+const MercadoPagoStrategy = require('../../../strategies/MercadoPago');
 
 describe('MercadoPagoStrategy - Pruebas Unitarias', () => {
   let strategy;

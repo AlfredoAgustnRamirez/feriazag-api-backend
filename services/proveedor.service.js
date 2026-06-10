@@ -17,7 +17,7 @@ class ProveedorService {
   async actualizarProveedor(id_proveedor, data) {
      const { cuit } = data;
     if (cuit) {
-        const existente = await ProveedorModel.findByCuitExcludingId(cuit, id);
+        const existente = await ProveedorModel.findByCuitExcludingId(cuit, id_proveedor);
         if (existente) {
             throw new Error(`Ya existe otro proveedor con el CUIT ${cuit}`);
         }

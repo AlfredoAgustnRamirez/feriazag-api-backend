@@ -1,4 +1,4 @@
-const EfectivoStrategy = require('../../services/strategies/EfectivoStrategy');
+const EfectivoStrategy = require('../../../strategies/Efectivo');
 
 describe('EfectivoStrategy - Pruebas Unitarias', () => {
   let strategy;
