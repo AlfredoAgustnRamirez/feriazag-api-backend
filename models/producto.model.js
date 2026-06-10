@@ -26,13 +26,7 @@ class ProductoModel {
   // producto.model.js - Método actualizarProducto corregido
 
 async actualizarProducto(id_producto, data, id_local, cantidad) {
-    console.log('========== MODELO ==========');
-    console.log('id_producto:', id_producto);
-    console.log('id_local:', id_local);
-    console.log('cantidad a actualizar:', cantidad);
-    
     const { cod_producto, id_categoria, descripcion, talle, precio, activo, imagen } = data;
-
     // 1. Actualizar tabla producto
     const sqlProducto = `
         UPDATE producto 
@@ -56,12 +50,9 @@ async actualizarProducto(id_producto, data, id_local, cantidad) {
         imagen || null,
         id_producto
     ]);
-    
-    console.log('✅ Producto actualizado');
 
     // 2. ACTUALIZAR STOCK en tabla producto_sucursal_stock
     if (id_local !== undefined && id_local !== null && cantidad !== undefined && cantidad !== null) {
-        console.log(`🔄 Actualizando stock: producto=${id_producto}, local=${id_local}, cantidad=${cantidad}`);
         
         // Verificar si existe el registro
         const exists = await query(
@@ -75,23 +66,14 @@ async actualizarProducto(id_producto, data, id_local, cantidad) {
                 'UPDATE producto_sucursal_stock SET cantidad = ?, updated_at = NOW() WHERE id_producto = ? AND id_local = ?',
                 [cantidad, id_producto, id_local]
             );
-            console.log('✅ Stock actualizado, filas afectadas:', result.affectedRows);
         } else {
             // Crear nuevo registro de stock
             const result = await query(
                 'INSERT INTO producto_sucursal_stock (id_producto, id_local, cantidad, activo, created_at, updated_at) VALUES (?, ?, ?, "Si", NOW(), NOW())',
                 [id_producto, id_local, cantidad]
             );
-            console.log('✅ Stock creado, insertId:', result.insertId);
         }
-    } else {
-        console.log('⚠️ No se actualizó stock. Datos recibidos:', {
-            id_local: id_local,
-            cantidad: cantidad,
-            tipoIdLocal: typeof id_local,
-            tipoCantidad: typeof cantidad
-        });
-    }
+    } 
     
     return true;
 }
