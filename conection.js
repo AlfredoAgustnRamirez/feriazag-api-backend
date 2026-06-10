@@ -74,7 +74,7 @@ const pool = mysql.createPool({
      * Contraseña del usuario de BD
      * @type {string} Tomado de .env
      * 
-     * NUNCA hardcodear contraseñas en el código
+     * ⚠️ NUNCA hardcodear contraseñas en el código
      * Siempre usar variables de entorno
      */
     password: process.env.DB_PASSWORD,
@@ -91,7 +91,7 @@ const pool = mysql.createPool({
      * Permite ejecutar múltiples consultas SQL en una sola llamada
      * @type {boolean} true
      * 
-     * Cuidado: Puede ser vulnerable a SQL Injection
+     * ⚠️ Cuidado: Puede ser vulnerable a SQL Injection
      * Solo habilitar si es necesario
      * 
      * Ejemplo:
