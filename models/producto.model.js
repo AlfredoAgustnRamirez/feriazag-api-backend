@@ -24,14 +24,32 @@ class ProductoModel {
   }
 
   async actualizarProducto(id_producto, data, id_local, cantidad) {
-    const { cod_producto, id_categoria, descripcion, talle, precio, activo } = data;
-    const sqlProducto = `
-      UPDATE producto 
-      SET cod_producto = ?, id_categoria = ?, descripcion = ?, talle = ?, precio = ?, activo = ? 
-      WHERE id_producto = ?
-    `;
-    await query(sqlProducto, [cod_producto, id_categoria, descripcion, talle, precio, activo || 'Si', id_producto]);
+    const { cod_producto, id_categoria, descripcion, talle, precio, activo, imagen } = data;
 
+    const sqlProducto = `
+        UPDATE producto 
+        SET cod_producto = ?, 
+            id_categoria = ?, 
+            descripcion = ?, 
+            talle = ?, 
+            precio = ?, 
+            activo = ?,
+            imagen = ?  
+        WHERE id_producto = ?
+    `;
+
+    await query(sqlProducto, [
+      cod_producto,
+      id_categoria,
+      descripcion,
+      talle,
+      precio,
+      activo || 'Si',
+      imagen || null,
+      id_producto
+    ]);
+
+    // Manejar stock (si aplica)
     if (cantidad !== undefined && id_local) {
       const exists = await query(
         'SELECT * FROM producto_sucursal_stock WHERE id_producto = ? AND id_local = ?',
@@ -50,6 +68,37 @@ class ProductoModel {
         );
       }
     }
+  }
+
+  /**
+       * Encuentra un producto por su ID
+       * @param {number} id - ID del producto
+       * @returns {Promise<Object|null>} Producto encontrado o null
+       */
+  async findById(id_producto) {
+    const sql = `
+        SELECT p.*, c.descripcion as categoria_nombre
+        FROM producto p
+        LEFT JOIN categoria c ON p.id_categoria = c.id_categoria
+        WHERE p.id_producto = ?
+    `;
+    const rows = await query(sql, [id_producto]);
+    return rows[0] || null;
+  }
+
+  /**
+   * Encuentra un producto por código excluyendo un ID específico
+   * @param {string} codigo - Código del producto
+   * @param {number} excludeId - ID a excluir
+   * @returns {Promise<Object|null>}
+   */
+  async findByCodigoExcludingId(codigo, excludeId) {
+    const query = `
+            SELECT * FROM productos 
+            WHERE cod_producto = ? AND id_producto != ?
+        `;
+    const [rows] = await db.execute(query, [codigo, excludeId]);
+    return rows[0] || null;
   }
 
   async obtenerProductos(idLocal) {
@@ -347,15 +396,15 @@ class ProductoModel {
   async findByCodigo(cod_producto) {
     const rows = await query('SELECT id_producto FROM producto WHERE cod_producto = ?', [cod_producto]);
     return rows[0] || null;
-}
+  }
 
-async findByCodigoExcludingId(cod_producto, id_producto) {
+  async findByCodigoExcludingId(cod_producto, id_producto) {
     const rows = await query(
-        'SELECT id_producto FROM producto WHERE cod_producto = ? AND id_producto != ?',
-        [cod_producto, id_producto]
+      'SELECT id_producto FROM producto WHERE cod_producto = ? AND id_producto != ?',
+      [cod_producto, id_producto]
     );
     return rows[0] || null;
-}
+  }
 }
 
 

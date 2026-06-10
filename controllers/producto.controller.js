@@ -4,6 +4,11 @@ const { validationResult } = require('express-validator');
 class ProductoController {
 
   // ============ PRODUCTOS ============
+  
+  /**
+   * Crear un nuevo producto
+   * POST /api/producto/crear
+   */
   async crearProducto(req, res, next) {
     try {
         const errors = validationResult(req);
@@ -11,6 +16,7 @@ class ProductoController {
             return res.status(400).json({ errores: errors.array() });
         }
 
+        // ✅ Pasar el archivo (imagen) si existe
         const resultado = await ProductoService.crearProducto(req.body, req.file);
         res.status(201).json(resultado);
     } catch (error) {
@@ -20,8 +26,12 @@ class ProductoController {
             success: false 
         });
     }
-}
+  }
 
+  /**
+   * Actualizar un producto existente
+   * PUT /api/producto/actualizar/:id_producto
+   */
   async actualizarProducto(req, res, next) {
     try {
       const errors = validationResult(req);
@@ -30,12 +40,23 @@ class ProductoController {
       }
 
       const { id_producto } = req.params;
-      const resultado = await ProductoService.actualizarProducto(id_producto, req.body, !!req.file);
+      
+      // ✅ Pasar el archivo (si existe) y los flags de imagen
+      const resultado = await ProductoService.actualizarProducto(
+        id_producto, 
+        req.body, 
+        req.file,           // ← Pasar el archivo, no un booleano
+        req.body.mantener_imagen === 'true',  // ← Flag para mantener imagen
+        req.body.eliminar_imagen === 'true'   // ← Flag para eliminar imagen
+      );
+      
       res.json(resultado);
     } catch (error) {
       next(error);
     }
   }
+
+  // ============ OBTENER PRODUCTOS ============
 
   async obtenerTodosLosProductos(req, res, next) {
     try {
@@ -47,13 +68,13 @@ class ProductoController {
   }
 
   async obtenerTodosLosProductosConStockTotal(req, res, next) {
-  try {
-    const productos = await ProductoService.obtenerTodosLosProductosConStockTotal();
-    res.json(productos);
-  } catch (error) {
-    next(error);
+    try {
+      const productos = await ProductoService.obtenerTodosLosProductosConStockTotal();
+      res.json(productos);
+    } catch (error) {
+      next(error);
+    }
   }
-}
 
   async obtenerProductosConStock(req, res, next) {
     try {
@@ -68,9 +89,7 @@ class ProductoController {
   async obtenerProductosPorLocal(req, res, next) {
     try {
       const { idLocal } = req.params;
-
       const productos = await ProductoService.obtenerProductosPorLocal(idLocal);
-
       res.json(productos);
     } catch (error) {
       console.error('Error en obtenerProductosPorLocal:', error);
@@ -126,6 +145,8 @@ class ProductoController {
       next(error);
     }
   }
+
+  // ============ ACTIVAR/DESACTIVAR ============
 
   async activarProducto(req, res, next) {
     try {

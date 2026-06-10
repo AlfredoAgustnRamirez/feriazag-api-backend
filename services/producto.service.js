@@ -3,47 +3,75 @@ const ProductoModel = require('../models/producto.model');
 class ProductoService {
 
   // ============ PRODUCTOS ============
- async crearProducto(data, file) {
+  async crearProducto(data, file) {
     const imagen = file?.filename || null;
     const { cod_producto, cantidad, id_local } = data;
-    
+
     if (cod_producto) {
-        const existente = await ProductoModel.findByCodigo(cod_producto);
-        if (existente) {
-            throw new Error(`Ya existe un producto con el código ${cod_producto}`);
-        }
+      const existente = await ProductoModel.findByCodigo(cod_producto);
+      if (existente) {
+        throw new Error(`Ya existe un producto con el código ${cod_producto}`);
+      }
     }
-    
+
     const nuevoId = await ProductoModel.crearProducto({ ...data, imagen });
-    
+
     if (cantidad !== undefined && id_local) {
-        await ProductoModel.crearStock({
-            id_producto: nuevoId,
-            id_local: id_local,
-            cantidad: cantidad,
-            activo: 'Si'
-        });
+      await ProductoModel.crearStock({
+        id_producto: nuevoId,
+        id_local: id_local,
+        cantidad: cantidad,
+        activo: 'Si'
+      });
     }
-    
+
     return { id_producto: nuevoId, mensaje: 'Producto creado correctamente' };
-}
+  }
 
   async actualizarProducto(id, data, file) {
-    const imagen = file?.filename || null;
     const { cod_producto } = data;
-    
+
+    // Validar código duplicado (excluyendo el producto actual)
     if (cod_producto) {
-        const existente = await ProductoModel.findByCodigoExcludingId(cod_producto, id);
-        if (existente) {
-            throw new Error(`Ya existe otro producto con el código ${cod_producto}`);
-        }
+      const existente = await ProductoModel.findByCodigoExcludingId(cod_producto, id);
+      if (existente) {
+        throw new Error(`Ya existe otro producto con el código ${cod_producto}`);
+      }
     }
-    
-    // Actualizar producto
-    await ProductoModel.actualizarProducto(id, { ...data, imagen });
-    
-    return { mensaje: 'Producto actualizado correctamente' };
-}
+
+    const productoActual = await ProductoModel.findById(id);
+
+    if (!productoActual) {
+      throw new Error('Producto no encontrado');
+    }
+
+    let imagenFinal = productoActual.imagen;
+
+    if (file) {
+      // Si hay nueva imagen, usar la nueva
+      imagenFinal = file.filename;
+
+      // Opcional: Eliminar la imagen vieja del servidor
+      if (productoActual.imagen) {
+        const fs = require('fs');
+        const path = require('path');
+        const oldImagePath = path.join(__dirname, '../uploads', productoActual.imagen);
+        if (fs.existsSync(oldImagePath)) {
+          fs.unlinkSync(oldImagePath);
+        }
+      }
+    }
+
+    await ProductoModel.actualizarProducto(id, {
+      ...data,
+      imagen: imagenFinal
+    });
+
+    return {
+      mensaje: 'Producto actualizado correctamente',
+      imagen: imagenFinal
+    };
+  }
 
   async obtenerTodosLosProductosConStockTotal() {
     return await ProductoModel.obtenerTodosLosProductosConStockTotal();
