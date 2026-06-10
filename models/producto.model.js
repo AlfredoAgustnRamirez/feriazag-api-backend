@@ -23,9 +23,17 @@ class ProductoModel {
     return result.insertId;
   }
 
-  async actualizarProducto(id_producto, data, id_local, cantidad) {
+  // producto.model.js - Método actualizarProducto corregido
+
+async actualizarProducto(id_producto, data, id_local, cantidad) {
+    console.log('========== MODELO ==========');
+    console.log('id_producto:', id_producto);
+    console.log('id_local:', id_local);
+    console.log('cantidad a actualizar:', cantidad);
+    
     const { cod_producto, id_categoria, descripcion, talle, precio, activo, imagen } = data;
 
+    // 1. Actualizar tabla producto
     const sqlProducto = `
         UPDATE producto 
         SET cod_producto = ?, 
@@ -39,36 +47,54 @@ class ProductoModel {
     `;
 
     await query(sqlProducto, [
-      cod_producto,
-      id_categoria,
-      descripcion,
-      talle,
-      precio,
-      activo || 'Si',
-      imagen || null,
-      id_producto
+        cod_producto,
+        id_categoria,
+        descripcion,
+        talle,
+        precio,
+        activo || 'Si',
+        imagen || null,
+        id_producto
     ]);
+    
+    console.log('✅ Producto actualizado');
 
-    // Manejar stock (si aplica)
-    if (cantidad !== undefined && id_local) {
-      const exists = await query(
-        'SELECT * FROM producto_sucursal_stock WHERE id_producto = ? AND id_local = ?',
-        [id_producto, id_local]
-      );
-
-      if (exists.length > 0) {
-        await query(
-          'UPDATE producto_sucursal_stock SET cantidad = ? WHERE id_producto = ? AND id_local = ?',
-          [cantidad, id_producto, id_local]
+    // 2. ACTUALIZAR STOCK en tabla producto_sucursal_stock
+    if (id_local !== undefined && id_local !== null && cantidad !== undefined && cantidad !== null) {
+        console.log(`🔄 Actualizando stock: producto=${id_producto}, local=${id_local}, cantidad=${cantidad}`);
+        
+        // Verificar si existe el registro
+        const exists = await query(
+            'SELECT * FROM producto_sucursal_stock WHERE id_producto = ? AND id_local = ?',
+            [id_producto, id_local]
         );
-      } else {
-        await query(
-          'INSERT INTO producto_sucursal_stock (id_producto, id_local, cantidad, activo) VALUES (?, ?, ?, "Si")',
-          [id_producto, id_local, cantidad]
-        );
-      }
+        
+        if (exists.length > 0) {
+            // Actualizar stock existente
+            const result = await query(
+                'UPDATE producto_sucursal_stock SET cantidad = ?, updated_at = NOW() WHERE id_producto = ? AND id_local = ?',
+                [cantidad, id_producto, id_local]
+            );
+            console.log('✅ Stock actualizado, filas afectadas:', result.affectedRows);
+        } else {
+            // Crear nuevo registro de stock
+            const result = await query(
+                'INSERT INTO producto_sucursal_stock (id_producto, id_local, cantidad, activo, created_at, updated_at) VALUES (?, ?, ?, "Si", NOW(), NOW())',
+                [id_producto, id_local, cantidad]
+            );
+            console.log('✅ Stock creado, insertId:', result.insertId);
+        }
+    } else {
+        console.log('⚠️ No se actualizó stock. Datos recibidos:', {
+            id_local: id_local,
+            cantidad: cantidad,
+            tipoIdLocal: typeof id_local,
+            tipoCantidad: typeof cantidad
+        });
     }
-  }
+    
+    return true;
+}
 
   /**
        * Encuentra un producto por su ID
@@ -92,14 +118,13 @@ class ProductoModel {
    * @param {number} excludeId - ID a excluir
    * @returns {Promise<Object|null>}
    */
-  async findByCodigoExcludingId(codigo, excludeId) {
-    const query = `
-            SELECT * FROM productos 
-            WHERE cod_producto = ? AND id_producto != ?
-        `;
-    const [rows] = await db.execute(query, [codigo, excludeId]);
+  async findByCodigoExcludingId(cod_producto, id_producto) {
+    const rows = await query(
+        'SELECT id_producto FROM producto WHERE cod_producto = ? AND id_producto != ?',
+        [cod_producto, id_producto]
+    );
     return rows[0] || null;
-  }
+}
 
   async obtenerProductos(idLocal) {
     const sql = `

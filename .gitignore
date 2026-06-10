@@ -29,3 +29,20 @@ build/
 # Archivos temporales
 *.tmp
 *.temp
+
+# ============================================
+# UPLOADS - Imágenes subidas
+# ============================================
+# Ignorar todos los archivos dentro de uploads
+uploads/*
+
+# Pero mantener la carpeta uploads (opcional - crear .gitkeep)
+!uploads/.gitkeep
+
+# También ignorar carpetas similares
+public/uploads/*
+!public/uploads/.gitkeep
+storage/uploads/*
+!storage/uploads/.gitkeep
+temp/uploads/*
+!temp/uploads/.gitkeep

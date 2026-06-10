@@ -32,29 +32,30 @@ class ProductoController {
    * Actualizar un producto existente
    * PUT /api/producto/actualizar/:id_producto
    */
-  async actualizarProducto(req, res, next) {
-    try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res.status(400).json({ errores: errors.array() });
-      }
+  // producto.controller.js
 
-      const { id_producto } = req.params;
-      
-      // ✅ Pasar el archivo (si existe) y los flags de imagen
-      const resultado = await ProductoService.actualizarProducto(
-        id_producto, 
-        req.body, 
-        req.file,           // ← Pasar el archivo, no un booleano
-        req.body.mantener_imagen === 'true',  // ← Flag para mantener imagen
-        req.body.eliminar_imagen === 'true'   // ← Flag para eliminar imagen
-      );
-      
-      res.json(resultado);
+async actualizarProducto(req, res, next) {
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errores: errors.array() });
+        }
+        const { id_producto } = req.params;
+        const resultado = await ProductoService.actualizarProducto(
+            id_producto, 
+            req.body,    
+            req.file       
+        );
+        
+        res.json(resultado);
     } catch (error) {
-      next(error);
+        console.error('Error en actualizarProducto:', error);
+        res.status(400).json({ 
+            mensaje: error.message,
+            success: false 
+        });
     }
-  }
+}
 
   // ============ OBTENER PRODUCTOS ============
 
