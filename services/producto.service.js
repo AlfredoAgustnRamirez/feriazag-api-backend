@@ -1,17 +1,64 @@
+// producto.service.js
 const ProductoModel = require('../models/producto.model');
+const CategoriaModel = require('../models/categoria.model'); 
 
 class ProductoService {
 
   // ============ PRODUCTOS ============
+
+  /**
+   * Generar código automático basado en la categoría
+   * @param {number} id_categoria - ID de la categoría
+   * @returns {Promise<string>} Código generado (ej: REM001)
+   */
+  async generarCodigoPorCategoria(id_categoria) {
+    // 1. Obtener el nombre de la categoría
+    const categoria = await CategoriaModel.findById(id_categoria);
+    if (!categoria) {
+      throw new Error('Categoría no encontrada');
+    }
+
+    // 2. Generar prefijo (primeras 3 letras en mayúscula)
+    const prefijo = categoria.descripcion.substring(0, 3).toUpperCase();
+
+    // 3. Buscar el último código de esa categoría
+    const ultimo = await ProductoModel.obtenerUltimoCodigoPorCategoria(id_categoria);
+
+    if (!ultimo) {
+      return `${prefijo}001`;
+    }
+
+    // 4. Extraer el número del código
+    const codigoActual = ultimo.cod_producto;
+    const numero = parseInt(codigoActual.replace(prefijo, ''));
+
+    if (isNaN(numero)) {
+      return `${prefijo}001`;
+    }
+
+    // 5. Incrementar y formatear con 3 dígitos
+    const nuevoNumero = numero + 1;
+    const nuevoCodigo = `${prefijo}${String(nuevoNumero).padStart(3, '0')}`;
+
+    return nuevoCodigo;
+  }
+
   async crearProducto(data, file) {
     const imagen = file?.filename || null;
     const { cod_producto, cantidad, id_local } = data;
 
-    if (cod_producto) {
-      const existente = await ProductoModel.findByCodigo(cod_producto);
-      if (existente) {
-        throw new Error(`Ya existe un producto con el código ${cod_producto}`);
+    // ✅ Si no viene código o está vacío, generarlo automáticamente
+    if (!cod_producto || cod_producto.trim() === '') {
+      if (!data.id_categoria) {
+        throw new Error('Debe seleccionar una categoría para generar el código');
       }
+      data.cod_producto = await this.generarCodigoPorCategoria(data.id_categoria);
+    }
+
+    // ✅ Validar código único (SOLO UNA VEZ)
+    const existente = await ProductoModel.findByCodigo(data.cod_producto);
+    if (existente) {
+      throw new Error(`Ya existe un producto con el código ${data.cod_producto}`);
     }
 
     const nuevoId = await ProductoModel.crearProducto({ ...data, imagen });
@@ -28,67 +75,64 @@ class ProductoService {
     return { id_producto: nuevoId, mensaje: 'Producto creado correctamente' };
   }
 
-  // producto.service.js
-
-async actualizarProducto(id, data, file) {
+  async actualizarProducto(id, data, file) {
     const { cod_producto, cantidad, id_local } = data;
-    
+
     // Validar código duplicado
     if (cod_producto) {
-        const existente = await ProductoModel.findByCodigoExcludingId(cod_producto, id);
-        if (existente) {
-            throw new Error(`Ya existe otro producto con el código ${cod_producto}`);
-        }
+      const existente = await ProductoModel.findByCodigoExcludingId(cod_producto, id);
+      if (existente) {
+        throw new Error(`Ya existe otro producto con el código ${cod_producto}`);
+      }
     }
-    
+
     // Obtener el producto actual para mantener la imagen si no hay nueva
     const productoActual = await ProductoModel.findById(id);
-    
+
     if (!productoActual) {
-        throw new Error('Producto no encontrado');
+      throw new Error('Producto no encontrado');
     }
-    
+
     // Determinar la imagen: SOLO si viene un archivo nuevo
-    let imagenFinal = productoActual.imagen; // Mantener la actual por defecto
-    
+    let imagenFinal = productoActual.imagen;
+
     if (file) {
-        // Si hay nueva imagen, usar la nueva
-        imagenFinal = file.filename;
-        
-        // Eliminar la imagen vieja del servidor
-        const fs = require('fs');
-        const path = require('path');
-        if (productoActual.imagen) {
-            const oldImagePath = path.join(__dirname, '../uploads', productoActual.imagen);
-            if (fs.existsSync(oldImagePath)) {
-                fs.unlinkSync(oldImagePath);
-            }
+      imagenFinal = file.filename;
+
+      const fs = require('fs');
+      const path = require('path');
+      if (productoActual.imagen) {
+        const oldImagePath = path.join(__dirname, '../uploads', productoActual.imagen);
+        if (fs.existsSync(oldImagePath)) {
+          fs.unlinkSync(oldImagePath);
         }
+      }
     }
-    
+
     const updateData = {
-        cod_producto: data.cod_producto,
-        id_categoria: data.id_categoria,
-        descripcion: data.descripcion,
-        talle: data.talle,
-        precio: data.precio,
-        activo: data.activo,
-        imagen: imagenFinal  
+      cod_producto: data.cod_producto,
+      id_categoria: data.id_categoria,
+      descripcion: data.descripcion,
+      talle: data.talle,
+      precio: data.precio,
+      activo: data.activo,
+      imagen: imagenFinal
     };
-    
-    // Actualizar producto y stock
+
     await ProductoModel.actualizarProducto(
-        parseInt(id),
-        updateData,
-        id_local ? parseInt(id_local) : null,
-        cantidad !== undefined ? parseInt(cantidad) : undefined
+      parseInt(id),
+      updateData,
+      id_local ? parseInt(id_local) : null,
+      cantidad !== undefined ? parseInt(cantidad) : undefined
     );
-    
-    return { 
-        mensaje: 'Producto actualizado correctamente',
-        success: true 
+
+    return {
+      mensaje: 'Producto actualizado correctamente',
+      success: true
     };
-}
+  }
+
+  // ============ OBTENER PRODUCTOS ============
 
   async obtenerTodosLosProductosConStockTotal() {
     return await ProductoModel.obtenerTodosLosProductosConStockTotal();
@@ -101,7 +145,6 @@ async actualizarProducto(id, data, file) {
   async obtenerProductosPorLocal(idLocal) {
     return await ProductoModel.obtenerProductosPorLocal(idLocal);
   }
-
 
   async obtenerProductosActivos() {
     return await ProductoModel.obtenerProductosActivos();

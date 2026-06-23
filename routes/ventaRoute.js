@@ -40,8 +40,8 @@ router.post('/calcular-totales',
 );
 
 // LISTAR PRODUCTOS PARA VENTA
-router.get('/listar', 
-    verificarToken, 
+router.get('/listar',
+    verificarToken,
     VentaController.listarProductos);
 
 // REGISTRAR VENTA
@@ -76,28 +76,28 @@ router.post('/ventas', async (req, res) => {
 });
 
 // VENTAS POR FECHA
-router.get('/por-fecha', 
-    verificarToken, 
+router.get('/por-fecha',
+    verificarToken,
     VentaController.obtenerVentasPorFecha);
 
 // MEDIOS DE PAGO
-router.get('/medios-pago', 
-    verificarToken, 
+router.get('/medios-pago',
+    verificarToken,
     VentaController.obtenerMediosPago);
 
 // DASHBOARD STATS
-router.get('/dashboard-stats', 
-    verificarToken, 
+router.get('/dashboard-stats',
+    verificarToken,
     VentaController.getDashboardStats);
 
 // GUARDAR CIERRE DE CAJA
-router.post('/guardar-caja', 
-    verificarToken, 
+router.post('/guardar-caja',
+    verificarToken,
     VentaController.guardarCierre);
 
 // HISTORIAL DE CAJA
-router.get('/historial-caja', 
-    verificarToken, 
+router.get('/historial-caja',
+    verificarToken,
     VentaController.getHistorialCaja);
 
 // REPORTE POR RANGO
@@ -112,7 +112,7 @@ router.post('/calcular-total',
     VentaController.calcularTotalConRecargo
 );
 
-router.get('/verificar-caja', 
+router.get('/verificar-caja',
     VentaController.verificarCajaAbierta
 );
 
@@ -121,6 +121,13 @@ router.get('/todas',
     verificarToken,
     VentaController.obtenerTodasLasVentas
 );
+
+// ============================================================
+// NUEVA RUTA: Consultar stock disponible
+// GET /api/ventas/stock/:id_producto/:id_local
+// ============================================================
+router.get('/stock/:id_producto/:id_local',
+    VentaController.consultarStockDisponible);
 
 // DESACTIVAR PRODUCTO
 router.delete('/desactivar/:id_producto',

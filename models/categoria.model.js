@@ -71,6 +71,12 @@ class CategoriaModel {
     const result = await query(sql, [id_categoria]);
     return result.affectedRows;
   }
+
+  async findById(id_categoria) {
+    const sql = 'SELECT * FROM categoria WHERE id_categoria = ?';
+    const rows = await query(sql, [id_categoria]);
+    return rows[0] || null;
+}
 }
 
 module.exports = new CategoriaModel();

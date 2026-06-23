@@ -90,12 +90,6 @@ const pool = mysql.createPool({
     /**
      * Permite ejecutar múltiples consultas SQL en una sola llamada
      * @type {boolean} true
-     * 
-     * ⚠️ Cuidado: Puede ser vulnerable a SQL Injection
-     * Solo habilitar si es necesario
-     * 
-     * Ejemplo:
-     * "SELECT * FROM productos; SELECT * FROM categorias;"
      */
     multipleStatements: true,
     

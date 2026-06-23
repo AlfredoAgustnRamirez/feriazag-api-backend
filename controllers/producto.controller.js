@@ -4,27 +4,27 @@ const { validationResult } = require('express-validator');
 class ProductoController {
 
   // ============ PRODUCTOS ============
-  
+
   /**
    * Crear un nuevo producto
    * POST /api/producto/crear
    */
   async crearProducto(req, res, next) {
     try {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ errores: errors.array() });
-        }
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errores: errors.array() });
+      }
 
-        // ✅ Pasar el archivo (imagen) si existe
-        const resultado = await ProductoService.crearProducto(req.body, req.file);
-        res.status(201).json(resultado);
+      // ✅ Pasar el archivo (imagen) si existe
+      const resultado = await ProductoService.crearProducto(req.body, req.file);
+      res.status(201).json(resultado);
     } catch (error) {
-        console.error('Error en crearProducto:', error.message);
-        res.status(400).json({ 
-            mensaje: error.message,
-            success: false 
-        });
+      console.error('Error en crearProducto:', error.message);
+      res.status(400).json({
+        mensaje: error.message,
+        success: false
+      });
     }
   }
 
@@ -34,30 +34,48 @@ class ProductoController {
    */
   // producto.controller.js
 
-async actualizarProducto(req, res, next) {
+  async actualizarProducto(req, res, next) {
     try {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ errores: errors.array() });
-        }
-        const { id_producto } = req.params;
-        const resultado = await ProductoService.actualizarProducto(
-            id_producto, 
-            req.body,    
-            req.file       
-        );
-        
-        res.json(resultado);
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errores: errors.array() });
+      }
+      const { id_producto } = req.params;
+      const resultado = await ProductoService.actualizarProducto(
+        id_producto,
+        req.body,
+        req.file
+      );
+
+      res.json(resultado);
     } catch (error) {
-        console.error('Error en actualizarProducto:', error);
-        res.status(400).json({ 
-            mensaje: error.message,
-            success: false 
-        });
+      console.error('Error en actualizarProducto:', error);
+      res.status(400).json({
+        mensaje: error.message,
+        success: false
+      });
     }
-}
+  }
 
   // ============ OBTENER PRODUCTOS ============
+  /**
+ * Obtener código sugerido para una categoría
+ * GET /producto/generar-codigo/:id_categoria
+ */
+  async generarCodigoSugerido(req, res, next) {
+    try {
+      const { id_categoria } = req.params;
+
+      if (!id_categoria) {
+        return res.status(400).json({ error: 'ID de categoría requerido' });
+      }
+
+      const codigo = await ProductoService.generarCodigoPorCategoria(id_categoria);
+      res.json({ codigo });
+    } catch (error) {
+      next(error);
+    }
+  }
 
   async obtenerTodosLosProductos(req, res, next) {
     try {

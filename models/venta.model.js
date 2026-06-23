@@ -1,3 +1,7 @@
+// ============================================================================
+// IMPORTACIONES
+// ============================================================================
+
 const connection = require('../conection');
 
 const query = (sql, params) => {
@@ -70,17 +74,15 @@ class VentaModel {
 
     // VERIFICAR SI HAY CAJA ABIERTA
     async verificarCajaAbierta(id_usuario, id_local) {
-
         const sql = `
-        SELECT id_cierre 
-        FROM cierre_caja 
-        WHERE id_usuario = ? 
-        AND fecha_cierre IS NULL 
-        AND DATE(fecha) = CURDATE()
-        LIMIT 1
-    `;
+            SELECT id_cierre 
+            FROM cierre_caja 
+            WHERE id_usuario = ? 
+            AND fecha_cierre IS NULL 
+            AND DATE(fecha) = CURDATE()
+            LIMIT 1
+        `;
         const results = await query(sql, [id_usuario]);
-
         return results.length > 0;
     }
 
@@ -136,12 +138,12 @@ class VentaModel {
     // OBTENER TODAS LAS VENTAS
     async obtenerTodasLasVentas() {
         const sql = `
-    SELECT vc.id_cabecera, vc.fecha, vc.total_venta as total,
-           COALESCE(c.nombre_razon_social, 'Consumidor Final') as cliente
-    FROM venta_cabecera vc
-    LEFT JOIN cliente c ON vc.id_cliente = c.id_cliente
-    ORDER BY vc.id_cabecera DESC
-  `;
+            SELECT vc.id_cabecera, vc.fecha, vc.total_venta as total,
+                   COALESCE(c.nombre_razon_social, 'Consumidor Final') as cliente
+            FROM venta_cabecera vc
+            LEFT JOIN cliente c ON vc.id_cliente = c.id_cliente
+            ORDER BY vc.id_cabecera DESC
+        `;
         return await query(sql);
     }
 
@@ -213,6 +215,34 @@ class VentaModel {
             ORDER BY c.fecha DESC
         `;
         return await query(sql);
+    }
+
+    consultarStockDisponible(id_producto, id_local) {
+        return new Promise((resolve, reject) => {
+            // 1. Ejecutar el procedimiento almacenado
+            connection.query(
+                'CALL sp_consultar_stock_disponible(?, ?, @stock, @nombre, @precio)',
+                [id_producto, id_local],
+                (error) => {
+                    if (error) {
+                        reject(error);
+                        return;
+                    }
+
+                    // 2. Obtener los valores de salida
+                    connection.query(
+                        'SELECT @stock AS stock_disponible, @nombre AS nombre_producto, @precio AS precio',
+                        (error, results) => {
+                            if (error) {
+                                reject(error);
+                                return;
+                            }
+                            resolve(results[0]);
+                        }
+                    );
+                }
+            );
+        });
     }
 
     // OBTENER REPORTE POR RANGO

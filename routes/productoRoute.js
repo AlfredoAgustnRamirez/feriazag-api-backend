@@ -164,4 +164,11 @@ router.get('/local/usuario/locales',
   ProductoController.obtenerSucursalesUsuario
 );
 
+// GET - Generar código sugerido por categoría
+router.get(
+    '/generar-codigo/:id_categoria',
+    verificarToken,
+    ProductoController.generarCodigoSugerido
+);
+
 module.exports = router;
